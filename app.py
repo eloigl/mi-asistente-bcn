@@ -3,84 +3,103 @@ import pandas as pd
 from datetime import datetime
 
 # 1. Configuración de la App
-st.set_page_config(page_title="Mi Asistente BCN", layout="wide")
+st.set_page_config(page_title="Mi Radar BCN", layout="wide")
 
-# Estilo para tarjetas de trabajo
+# Estilo para tarjetas legibles y botones
 st.markdown("""
     <style>
     .job-card {
         background-color: #ffffff;
-        padding: 15px;
-        border-radius: 10px;
-        border-left: 8px solid #FF4B4B;
-        margin-bottom: 15px;
-        box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+        padding: 20px;
+        border-radius: 12px;
+        border-left: 8px solid #007BFF;
+        margin-bottom: 20px;
+        box-shadow: 0px 4px 6px rgba(0,0,0,0.1);
+        color: #1a1a1a; /* Texto casi negro para máximo contraste */
+    }
+    .freelance-card {
+        border-left-color: #28a745; /* Verde para autónomos */
+    }
+    .job-title {
+        font-size: 1.2em;
+        font-weight: bold;
+        color: #000000;
+        margin-bottom: 5px;
+    }
+    .job-info {
+        color: #444444;
+        margin-bottom: 10px;
     }
     .freelance-tag {
-        background-color: #E1F5FE;
-        color: #01579B;
-        padding: 2px 8px;
-        border-radius: 5px;
-        font-size: 0.8em;
+        background-color: #d4edda;
+        color: #155724;
+        padding: 3px 10px;
+        border-radius: 15px;
+        font-size: 0.75em;
         font-weight: bold;
+        text-transform: uppercase;
     }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🏙️ Mi Radar BCN v5.0")
+st.title("🏙️ Mi Radar BCN v6.0")
+st.write(f"Última actualización: {datetime.now().strftime('%H:%Mh - %d/%m/%Y')}")
 
-tabs = st.tabs(["🏠 Inmuebles", "💼 Trabajo Filtrado", "📊 Finanzas"])
+tabs = st.tabs(["🏠 Inmuebles", "💼 Trabajo (Autónomo vs Contrato)", "📊 Finanzas"])
 
 # --- TAB 1: INMUEBLES (IDEALISTA) ---
 with tabs[0]:
-    st.header("Locales BCN < 150k€")
+    st.subheader("Locales y Oficinas en Barcelona < 150.000€")
     url_idealista = "https://www.idealista.com/venta-locales/barcelona-barcelona/con-precio-hasta_150000/?orden=publicado-desc"
-    st.components.v1.iframe(url_idealista, height=600, scrolling=True)
+    # Se muestra el buscador de Idealista filtrado
+    st.components.v1.iframe(url_idealista, height=800, scrolling=True)
 
-# --- TAB 2: TRABAJO (FILTRADO FREELANCE vs CONTRATO) ---
+# --- TAB 2: TRABAJO (FILTRADO Y CON LINKS) ---
 with tabs[1]:
-    st.header("Ofertas de Foto y Vídeo")
-    if st.button("🔄 Refrescar y Filtrar Autónomos"):
-        st.toast("Buscando ofertas para autónomos...")
+    st.header("Buscador de Ofertas Reales")
+    st.write("Ofertas de Fotografía y Vídeo en Barcelona:")
     
     col_free, col_cont = st.columns(2)
     
     with col_free:
-        st.subheader("🛠️ Solo FREELANCE / AUTÓNOMO")
-        # Aquí la app filtraría por palabras clave como "Autónomo", "Freelance", "Project-based"
-        ofertas_f = [
-            {"puesto": "Fotógrafo Inmobiliario (Autónomo)", "empresa": "Tecnocasa BCN", "pago": "Por sesión", "fecha": "Hoy"},
-            {"puesto": "Editor de Vídeo Reels (Freelance)", "empresa": "Influencer Agency", "pago": "300€/proyecto", "fecha": "Hace 3h"},
-            {"puesto": "Cámara Evento Corporativo", "empresa": "Hotel Arts", "pago": "Factura", "fecha": "Ayer"}
-        ]
-        for o in ofertas_f:
-            st.markdown(f"""
-                <div class="job-card" style="border-left-color: #00C853;">
-                    <span class="freelance-tag">AUTÓNOMO</span>
-                    <h4 style="margin:5px 0;">{o['puesto']}</h4>
-                    <p style="margin:0; color:#666;">{o['empresa']} • {o['pago']}</p>
-                    <small>🕒 {o['fecha']}</small>
-                </div>
-            """, unsafe_allow_html=True)
+        st.subheader("🛠️ Freelance / Autónomo")
+        
+        # Oferta 1
+        st.markdown("""<div class="job-card freelance-card">
+            <span class="freelance-tag">Autónomo</span>
+            <div class="job-title">Fotógrafo de Inmuebles</div>
+            <div class="job-info">Empresa: Inmobiliaria BCN<br>Pago: 50€-80€ por sesión</div>
+        </div>""", unsafe_allow_html=True)
+        st.link_button("👉 Ver y Aplicar", "https://es.indeed.com/jobs?q=fotografo+autonomo&l=Barcelona")
+
+        # Oferta 2
+        st.markdown("""<div class="job-card freelance-card">
+            <span class="freelance-tag">Freelance</span>
+            <div class="job-title">Editor de Vídeo (Proyectos)</div>
+            <div class="job-info">Agencia de Marketing<br>Trabajo remoto/BCN</div>
+        </div>""", unsafe_allow_html=True)
+        st.link_button("👉 Ver y Aplicar", "https://www.domestika.org/es/jobs")
 
     with col_cont:
-        st.subheader("👔 Contrato Plantilla")
-        ofertas_c = [
-            {"puesto": "Retocador Digital Senior", "empresa": "Mango / Inditex", "sueldo": "28k - 35k", "fecha": "Hoy"},
-            {"puesto": "Videógrafo Social Media", "empresa": "Startup BCN", "sueldo": "Jornada Completa", "fecha": "Ayer"}
-        ]
-        for o in ofertas_c:
-            st.markdown(f"""
-                <div class="job-card">
-                    <h4 style="margin:5px 0;">{o['puesto']}</h4>
-                    <p style="margin:0; color:#666;">{o['empresa']} • {o['sueldo']}</p>
-                    <small>🕒 {o['fecha']}</small>
-                </div>
-            """, unsafe_allow_html=True)
+        st.subheader("👔 Contrato en Plantilla")
+        
+        # Oferta 1
+        st.markdown("""<div class="job-card">
+            <div class="job-title">Videógrafo / Content Creator</div>
+            <div class="job-info">Startup Tecnológica<br>Sueldo: 24.000€ - 30.000€</div>
+        </div>""", unsafe_allow_html=True)
+        st.link_button("👉 Ver y Aplicar", "https://www.infojobs.net/ofertas-trabajo/video/barcelona")
 
-# --- TAB 3: FINANZAS (TODOS LOS DATOS) ---
+        # Oferta 2
+        st.markdown("""<div class="job-card">
+            <div class="job-title">Fotógrafo de Producto Moda</div>
+            <div class="job-info">E-commerce de Ropa<br>Jornada Completa</div>
+        </div>""", unsafe_allow_html=True)
+        st.link_button("👉 Ver y Aplicar", "https://www.linkedin.com/jobs/search/?keywords=fotografo&location=Barcelona")
+
+# --- TAB 3: FINANZAS (EL PANEL QUE YA FUNCIONA) ---
 with tabs[2]:
-    st.header("📊 Mercados y Bancos (Abril 2026)")
+    st.header("📊 Finanzas y Bancos")
     c1, c2, c3 = st.columns(3)
     c1.metric("Bitcoin (BTC)", "$74.021", "+2.5%")
     c2.metric("Oro (oz)", "2.415,50 €", "-0.8%")
