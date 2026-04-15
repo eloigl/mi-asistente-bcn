@@ -5,21 +5,36 @@ from datetime import datetime
 # 1. Configuración de la App
 st.set_page_config(page_title="Mi Radar BCN", layout="wide")
 
-# Estilo para tarjetas y métricas
+# Estilo para que las métricas tengan buen tamaño y las tarjetas sean legibles
 st.markdown("""
     <style>
-    .stMetric { background-color: #ffffff; border: 1px solid #ddd; padding: 15px; border-radius: 12px; }
-    .job-card { background-color: #ffffff; padding: 15px; border-radius: 12px; border-left: 8px solid #007BFF; margin-bottom: 15px; color: #000000; box-shadow: 0px 4px 6px rgba(0,0,0,0.1); }
+    .stMetric { 
+        background-color: #ffffff; 
+        border: 1px solid #eeeeee; 
+        padding: 15px; 
+        border-radius: 12px; 
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.05);
+    }
+    .job-card { 
+        background-color: #ffffff; 
+        padding: 15px; 
+        border-radius: 12px; 
+        border-left: 8px solid #007BFF; 
+        margin-bottom: 15px; 
+        color: #000000; 
+        box-shadow: 0px 4px 6px rgba(0,0,0,0.1); 
+    }
     .freelance-card { border-left-color: #28a745; }
+    h3 { margin-top: 20px; color: #1f1f1f; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🏙️ Mi Radar BCN v8.0")
-st.write(f"Última actualización: {datetime.now().strftime('%H:%Mh')}")
+st.title("🏙️ Mi Radar BCN v9.0")
+st.write(f"Actualizado: {datetime.now().strftime('%H:%Mh')}")
 
-tabs = st.tabs(["🏠 Idealista", "💼 Trabajo", "📊 Finanzas Pro"])
+tabs = st.tabs(["🏠 Idealista", "💼 Trabajo", "📊 Finanzas Visual"])
 
-# --- TAB 1: IDEALISTA ---
+# --- TAB 1: INMUEBLES ---
 with tabs[0]:
     st.components.v1.iframe("https://www.idealista.com/venta-locales/barcelona-barcelona/con-precio-hasta_150000/?orden=publicado-desc", height=700, scrolling=True)
 
@@ -28,58 +43,54 @@ with tabs[1]:
     col_free, col_cont = st.columns(2)
     with col_free:
         st.subheader("🛠️ Autónomos")
-        free_jobs = [
-            {"t": "Fotógrafo Inmobiliario", "e": "InmoBCN", "p": "60€/sesión", "l": "https://es.indeed.com/jobs?q=fotografo+autonomo&l=Barcelona"},
-            {"t": "Editor Vídeo Reels", "e": "Social Agency", "p": "Proyecto", "l": "https://www.domestika.org/es/jobs"},
-            {"t": "Cámara Eventos", "e": "Productora X", "p": "250€/día", "l": "https://www.linkedin.com"},
-            {"t": "Retocador Freelance", "e": "Estudio Moda", "p": "Factura", "l": "https://www.infojobs.net"},
-            {"t": "Operador Dron", "e": "Constructora", "p": "A convenir", "l": "https://www.google.com/search?q=empleo+dron+barcelona"}
+        jobs_f = [
+            ("Fotógrafo Inmuebles", "InmoBCN", "60€/s"),
+            ("Editor Reels", "Social Media", "Proyecto"),
+            ("Cámara Eventos", "Productora X", "250€/d"),
+            ("Retocador Freelance", "Estudio Moda", "Factura"),
+            ("Operador Dron", "Constructora", "A conv.")
         ]
-        for j in free_jobs:
-            st.markdown(f'<div class="job-card freelance-card"><b>{j["t"]}</b><br>{j["e"]} | {j["p"]}</div>', unsafe_allow_html=True)
-            st.link_button("Ver oferta", j["l"], key=j["t"])
+        for t, e, p in jobs_f:
+            st.markdown(f'<div class="job-card freelance-card"><b>{t}</b><br>{e} | {p}</div>', unsafe_allow_html=True)
+            st.link_button(f"Ver {t}", "https://es.indeed.com/jobs?q=fotografo+autonomo&l=Barcelona", key=t)
 
     with col_cont:
         st.subheader("👔 Contrato")
-        cont_jobs = [
-            {"t": "Videógrafo Content Creator", "e": "Startup BCN", "s": "25k-30k", "l": "https://www.infojobs.net"},
-            {"t": "Fotógrafo Producto", "e": "Ecommerce S.A.", "s": "Jornada Compl.", "l": "https://www.linkedin.com"},
-            {"t": "Ayudante Cámara", "e": "TV Local", "s": "Convenio", "l": "https://es.indeed.com"},
-            {"t": "Editor Post-Producción", "e": "Agencia Publi", "s": "24.000€", "l": "https://www.google.com"},
-            {"t": "Técnico Audiovisual", "e": "Eventos BCN", "s": "22.000€", "l": "https://www.infojobs.net"}
+        jobs_c = [
+            ("Videógrafo Content", "Startup BCN", "25k-30k"),
+            ("Fotógrafo Producto", "Ecommerce S.A.", "Jornada"),
+            ("Ayudante Cámara", "TV Local", "Convenio"),
+            ("Editor Post-Prod", "Agencia Publi", "24.000€"),
+            ("Técnico Audiovisual", "Eventos BCN", "22.000€")
         ]
-        for j in cont_jobs:
-            st.markdown(f'<div class="job-card"><b>{j["t"]}</b><br>{j["e"]} | {j["s"]}</div>', unsafe_allow_html=True)
-            st.link_button("Ver oferta", j["l"], key=j["t"])
+        for t, e, s in jobs_c:
+            st.markdown(f'<div class="job-card"><b>{t}</b><br>{e} | {s}</div>', unsafe_allow_html=True)
+            st.link_button(f"Ver {t}", "https://www.infojobs.net", key=t+"_c")
 
-# --- TAB 3: FINANZAS PRO (CON HISTORIAL) ---
+# --- TAB 3: FINANZAS VISUAL (CON FLECHAS Y COLORES) ---
 with tabs[2]:
-    st.header("📈 Mercados: Tendencia y Porcentajes")
-    
-    # Creamos una tabla comparativa para que sea fácil de leer
-    data_mercados = {
-        "Activo": ["Bitcoin (BTC)", "Oro (XAU)", "S&P 500", "Euríbor 12m"],
-        "Precio Actual": ["$74.021", "2.415,50 €", "5.210 pts", "2,767%"],
-        "Var. 24h": ["+2,5%", "-0,8%", "+0,1%", "-0,01%"],
-        "Var. 15 días": ["+12,4%", "+3,2%", "-1,5%", "-0,12%"],
-        "Var. 3 meses": ["+45,0%", "+8,7%", "+10,2%", "-0,45%"]
-    }
-    
-    st.table(pd.DataFrame(data_mercados))
-    
-    st.divider()
-    
-    st.subheader("🏦 Tipos de Interés y Ahorro")
-    c1, c2 = st.columns(2)
-    with c1:
-        st.write("**Hipotecas y Préstamos**")
-        st.table(pd.DataFrame({
-            "Producto": ["Euríbor 12m", "Hipotecas Fijas", "Hipotecas Var.", "Préstamo Pers."],
-            "Hoy": ["2,76%", "2,20% TAE", "E + 0,45%", "6,5% TAE"]
-        }))
-    with c2:
-        st.write("**Rentabilidad Ahorro**")
-        st.table(pd.DataFrame({
-            "Depósitos": ["Raisin (Mejor)", "Cuentas Remun.", "Bancos Tradic."],
-            "Pagan": ["2,85% TAE", "2,10% TAE", "0,75% TAE"]
-        }))
+    st.header("📈 Evolución de Mercados")
+
+    # Función auxiliar para crear la fila de métricas por activo
+    def fila_metrica(nombre, precio, d24h, d15d, m3):
+        st.subheader(nombre)
+        c1, c2, c3 = st.columns(3)
+        c1.metric(f"{precio}", f"Hoy (24h)", d24h)
+        c2.metric(f"Tendencia", "15 Días", d15d)
+        c3.metric(f"Histórico", "3 Meses", m3)
+        st.divider()
+
+    # Datos Actualizados (Simulados para el ejemplo visual)
+    fila_metrica("₿ Bitcoin (BTC)", "$74.021", "+2.5%", "+12.4%", "+45.0%")
+    fila_metrica("✨ Oro (XAU)", "2.415,50 €", "-0.8%", "+3.2%", "+8.7%")
+    fila_metrica("📉 Euríbor 12m", "2,767%", "-0.01%", "-0.12%", "-0.45%")
+    fila_metrica("🇺🇸 S&P 500", "5.210 pts", "+0.1%", "-1.5%", "+10.2%")
+
+    st.subheader("🏦 Resumen Bancos")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.write("**Préstamos**")
+        st.table(pd.DataFrame({"Tipo": ["Fijo", "Variable", "Personal"], "TAE": ["2,20%", "E+0,45%", "6,5%"]}))
+    with col_b:
+        st.write("**Ahorro**")
+        st.table(pd.DataFrame({"Depósito": ["Raisin", "Cuenta Rem.", "Tradicional"], "Paga": ["2,85%", "2,10%", "0,75%"]}))
