@@ -5,17 +5,17 @@ from datetime import datetime
 # 1. Configuración de la App
 st.set_page_config(page_title="Radar BCN Pro", layout="wide")
 
-# ESTILO CSS PARA LEGIBILIDAD TOTAL
+# ESTILO CSS MEJORADO
 st.markdown("""
     <style>
-    /* Precio Principal */
+    /* PRECIO PRINCIPAL EN COLOR AZUL NAVY */
     [data-testid="stMetricValue"] {
         font-size: 2.2rem !important;
         font-weight: 800 !important;
-        color: #000000 !important;
+        color: #1e40af !important; /* Azul intenso profesional */
     }
     
-    /* Cajas de Tendencia con Contraste */
+    /* Cajas de Tendencia con Contraste Máximo */
     .trend-box {
         padding: 15px;
         border-radius: 12px;
@@ -23,10 +23,10 @@ st.markdown("""
         margin-bottom: 10px;
         border: 1px solid rgba(0,0,0,0.1);
     }
-    .pos-box { background-color: #dcfce7; color: #166534; } /* Fondo verde suave, letra verde oscura */
-    .neg-box { background-color: #fee2e2; color: #991b1b; } /* Fondo rojo suave, letra roja oscura */
+    .pos-box { background-color: #dcfce7; color: #14532d; } /* Verde suave fondo, verde muy oscuro letra */
+    .neg-box { background-color: #fee2e2; color: #7f1d1d; } /* Rojo suave fondo, rojo muy oscuro letra */
     
-    .trend-label { font-size: 0.8rem; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
+    .trend-label { font-size: 0.8rem; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; color: #4b5563; }
     .trend-value { font-size: 1.4rem; font-weight: 800; }
 
     /* Tarjetas de Trabajo */
@@ -48,7 +48,7 @@ st.write(f"📅 {datetime.now().strftime('%d/%m/%Y | %H:%Mh')}")
 
 tabs = st.tabs(["🏠 Inmuebles", "💼 Empleo", "📈 Finanzas"])
 
-# --- TAB 1: IDEALISTA ---
+# --- TAB 1: INMUEBLES ---
 with tabs[0]:
     st.components.v1.iframe("https://www.idealista.com/venta-locales/barcelona-barcelona/con-precio-hasta_150000/?orden=publicado-desc", height=700, scrolling=True)
 
@@ -66,7 +66,7 @@ with tabs[1]:
             st.markdown(f'<div class="job-card"><b>{t}</b><br>Sueldo: {s}</div>', unsafe_allow_html=True)
             st.link_button(f"Aplicar", "https://www.infojobs.net", key=t+"_c")
 
-# --- TAB 3: FINANZAS (EL CAMBIO IMPORTANTE) ---
+# --- TAB 3: FINANZAS (PRECIOS EN COLOR) ---
 with tabs[2]:
     st.header("Análisis de Mercado")
 
@@ -74,19 +74,17 @@ with tabs[2]:
         st.markdown(f"### {titulo}")
         col1, col2, col3 = st.columns(3)
         
-        # 24 Horas (Sistema nativo)
+        # 24 Horas con precio en Azul
         col1.metric("Precio / 24h", precio, d24)
         
-        # Función para determinar clase de color
         def get_class(val): return "pos-box" if "+" in val else "neg-box"
         
-        # Caja 15 Días
+        # Cajas con letras oscuras para que se lean perfecto
         col2.markdown(f"""<div class="trend-box {get_class(d15)}">
             <div class="trend-label">15 Días</div>
             <div class="trend-value">{d15}</div>
         </div>""", unsafe_allow_html=True)
         
-        # Caja 3 Meses
         col3.markdown(f"""<div class="trend-box {get_class(m3)}">
             <div class="trend-label">3 Meses</div>
             <div class="trend-value">{m3}</div>
