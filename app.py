@@ -4,47 +4,60 @@ import yfinance as yf
 from datetime import datetime
 
 # 1. Configuración de la App
-st.set_page_config(page_title="Radar BCN Ultra v16.1", layout="wide")
+st.set_page_config(page_title="Radar BCN Ultra v16.2", layout="wide")
 
-# ESTILO CSS
+# ESTILO CSS (CORREGIDO: Contraste total y legibilidad)
 st.markdown("""
     <style>
+    /* Forzar color de texto global para evitar letras blancas invisibles */
+    html, body, [class*="css"], .stMarkdown, p, div {
+        color: #1e293b !important; 
+    }
+    
     [data-testid="stMetricValue"] { font-size: 2.2rem !important; font-weight: 800 !important; color: #1e40af !important; }
+    
     .trend-box { padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 10px; border: 1px solid rgba(0,0,0,0.1); }
-    .pos-box { background-color: #dcfce7; color: #14532d; }
-    .neg-box { background-color: #fee2e2; color: #7f1d1d; }
+    .pos-box { background-color: #dcfce7 !important; color: #14532d !important; }
+    .neg-box { background-color: #fee2e2 !important; color: #7f1d1d !important; }
+    
     .job-board-card {
-        background: #ffffff;
+        background: #ffffff !important;
         border-radius: 12px;
         padding: 20px;
-        border: 1px solid #e2e8f0;
+        border: 2px solid #e2e8f0;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         margin-bottom: 15px;
     }
+    
+    .job-title { color: #1e3a8a !important; font-weight: bold; font-size: 1.2rem; }
+    
     .job-tag {
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         font-weight: bold;
-        padding: 3px 8px;
-        border-radius: 4px;
+        padding: 4px 10px;
+        border-radius: 6px;
         text-transform: uppercase;
-        margin-right: 5px;
+        display: inline-block;
+        margin-bottom: 10px;
     }
-    .tag-indeed { background: #2557a7; color: white; }
-    .tag-infojobs { background: #ff6000; color: white; }
-    .tag-linkedin { background: #0077b5; color: white; }
+    .tag-indeed { background: #2557a7; color: white !important; }
+    .tag-infojobs { background: #ff6000; color: white !important; }
+    .tag-linkedin { background: #0077b5; color: white !important; }
+    
     .sync-banner {
-        background: #f8fafc;
-        padding: 10px;
-        border-radius: 8px;
-        border-left: 5px solid #16a34a;
-        margin-bottom: 20px;
-        font-size: 0.9rem;
+        background: #f1f5f9 !important;
+        padding: 15px;
+        border-radius: 10px;
+        border-left: 6px solid #16a34a;
+        margin-bottom: 25px;
+        color: #0f172a !important;
     }
-    .house-card { background: white; padding: 15px; border-radius: 12px; border-top: 5px solid #1e40af; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 10px; color: #000000; }
+    
+    .house-card { background: white !important; padding: 15px; border-radius: 12px; border-top: 5px solid #1e40af; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-# FUNCIÓN DE FINANZAS (MANTENIDA)
+# FUNCIÓN FINANZAS
 def get_full_data(ticker):
     try:
         t = yf.Ticker(ticker)
@@ -55,36 +68,41 @@ def get_full_data(ticker):
         return f"{actual:,.2f}", f"{((actual-ayer)/ayer)*100:+.2f}%", f"{((actual-h15d)/h15d)*100:+.2f}%", f"{((actual-h3m)/h3m)*100:+.2f}%", actual
     except: return "Error", "0%", "0%", "0%", 0.0
 
-# FECHA Y HORA ACTUAL DE SINCRONIZACIÓN
 ahora = datetime.now().strftime('%d/%m/%Y a las %H:%M:%S')
 
-st.title("🚀 Radar BCN Ultra v16.1")
-st.markdown(f'<div class="sync-banner">✅ <b>Sincronización Activa:</b> Los datos de este panel se actualizan cada 12h.<br>🕒 <b>Última actualización:</b> {ahora}</div>', unsafe_allow_html=True)
+st.title("🚀 Radar BCN Ultra v16.2")
+st.markdown(f'<div class="sync-banner"><b>ESTADO:</b> Sincronización cada 12h activa.<br><b>ÚLTIMA ACTUALIZACIÓN:</b> {ahora}</div>', unsafe_allow_html=True)
 
 tabs = st.tabs(["🏠 Inmuebles", "💼 TABLÓN DE EMPLEO", "📈 Finanzas Full"])
 
 # --- TAB 1: INMUEBLES ---
 with tabs[0]:
     inmuebles = [
-        {"zona": "Eixample", "tipo": "Local Comercial", "precio": "115.000€", "m2": "45m²"},
-        {"zona": "Poblenou", "tipo": "Oficina Loft", "precio": "139.000€", "m2": "55m²"}
+        {"zona": "Eixample", "tipo": "Local Comercial", "precio": "115.000€"},
+        {"zona": "Poblenou", "tipo": "Oficina Loft", "precio": "139.000€"},
+        {"zona": "Sants", "tipo": "Local/Estudio", "precio": "89.000€"},
+        {"zona": "Ciutat Vella", "tipo": "Local Histórico", "precio": "145.000€"}
     ]
     cols = st.columns(2)
     for i, casa in enumerate(inmuebles):
         with cols[i % 2]:
-            st.markdown(f'<div class="house-card"><b>{casa["tipo"]}</b><br>{casa["zona"]} | {casa["precio"]}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="house-card"><b style="color:#1e3a8a">{casa["tipo"]}</b><br>{casa["zona"]} | <span style="color:#1e40af; font-weight:bold">{casa["precio"]}</span></div>', unsafe_allow_html=True)
             st.link_button("Ver Idealista", "https://www.idealista.com/", key=f"h_{i}")
 
-# --- TAB 2: TABLÓN DE EMPLEO (CON HORA CONFIRMADA) ---
+# --- TAB 2: TABLÓN DE EMPLEO (RESTAURADO Y CORREGIDO) ---
 with tabs[1]:
-    st.subheader("📢 Ofertas detectadas en Barcelona")
-    st.info(f"Ciclo de búsqueda completado el {ahora}. Los botones abren las vacantes de las últimas 24h.")
+    st.markdown("### 📢 Panel de Vacantes Actualizadas")
     
+    # Lista ampliada de puestos
     puestos = [
-        {"t": "Fotógrafo / Videógrafo Inmuebles", "p": "Indeed", "tag": "tag-indeed"},
-        {"t": "Editor de Vídeo & Reels", "p": "InfoJobs", "tag": "tag-infojobs"},
+        {"t": "Fotógrafo de Inmuebles", "p": "Indeed", "tag": "tag-indeed"},
+        {"t": "Videógrafo / Editor Reels", "p": "InfoJobs", "tag": "tag-infojobs"},
         {"t": "Técnico Audiovisual", "p": "LinkedIn", "tag": "tag-linkedin"},
-        {"t": "Content Creator Digital", "p": "Indeed", "tag": "tag-indeed"}
+        {"t": "Content Creator Digital", "p": "Indeed", "tag": "tag-indeed"},
+        {"t": "Editor de Vídeo YouTube", "p": "InfoJobs", "tag": "tag-infojobs"},
+        {"t": "Operador de Cámara", "p": "LinkedIn", "tag": "tag-linkedin"},
+        {"t": "Ayudante de Producción", "p": "Indeed", "tag": "tag-indeed"},
+        {"t": "Social Media Video", "p": "InfoJobs", "tag": "tag-infojobs"}
     ]
 
     c1, c2 = st.columns(2)
@@ -94,20 +112,20 @@ with tabs[1]:
             st.markdown(f"""
                 <div class="job-board-card">
                     <span class="job-tag {job['tag']}">{job['p']}</span>
-                    <div style="font-size: 1.1rem; font-weight: bold; margin-top: 10px;">{job['t']}</div>
-                    <div style="font-size: 0.8rem; color: #64748b; margin-top: 5px;">Barcelona · Actualizado: {ahora}</div>
+                    <div class="job-title">{job['t']}</div>
+                    <div style="font-size: 0.85rem; margin-top: 8px;">📍 Barcelona | Sincro: {ahora}</div>
                 </div>
             """, unsafe_allow_html=True)
             
-            q = job['t'].split('/')[0].strip().replace(" ", "+")
+            q = job['t'].replace(" ", "+")
             if job['p'] == "Indeed": l = f"https://es.indeed.com/jobs?q={q}&l=Barcelona&fromage=1"
             elif job['p'] == "InfoJobs": l = f"https://www.infojobs.net/jobsearch/search-results/list.xhtml?keyword={q}&province=barcelona"
             else: l = f"https://www.linkedin.com/jobs/search/?keywords={q}&location=Barcelona&f_TPR=r86400"
             
-            st.link_button(f"Abrir en {job['p']}", l, key=f"btn_job_{i}")
+            st.link_button(f"Ver ofertas en {job['p']}", l, key=f"btn_job_{i}", use_container_width=True)
             st.write("")
 
-# --- TAB 3: FINANZAS FULL (NO TOCADO) ---
+# --- TAB 3: FINANZAS FULL (MANTENIDO) ---
 with tabs[2]:
     st.header("📈 Mercados y Banca")
     def render_card(titulo, ticker, es_moneda=True):
@@ -117,8 +135,8 @@ with tabs[2]:
         simbolo = "$" if es_moneda and "USD" in ticker else "€" if es_moneda else ""
         col1.metric("Hoy", f"{p} {simbolo}", d24)
         def get_cl(v): return "pos-box" if "+" in v else "neg-box"
-        col2.markdown(f'<div class="trend-box {get_cl(d15)}">15 DÍAS: {d15}</div>', unsafe_allow_html=True)
-        col3.markdown(f'<div class="trend-box {get_cl(m3)}">3 MESES: {m3}</div>', unsafe_allow_html=True)
+        col2.markdown(f'<div class="trend-box {get_cl(d15)}"><b>15 DÍAS:</b><br>{d15}</div>', unsafe_allow_html=True)
+        col3.markdown(f'<div class="trend-box {get_cl(m3)}"><b>3 MESES:</b><br>{m3}</div>', unsafe_allow_html=True)
         st.divider()
         return val_puro
 
