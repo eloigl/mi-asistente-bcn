@@ -1,44 +1,50 @@
 import streamlit as st
 import pandas as pd
+import yfinance as yf
 from datetime import datetime
 
-# 1. Configuración de la App
-st.set_page_config(page_title="Radar BCN Premium", layout="wide")
+# CONFIGURACIÓN
+st.set_page_config(page_title="Radar BCN Vivo", layout="wide")
 
-# ESTILO CSS (Precios azul, tarjetas con sombra y tablas limpias)
+# ESTILO CSS (Precios azul, cajas de tendencia y tarjetas)
 st.markdown("""
     <style>
-    /* Precios en Azul Profesional */
     [data-testid="stMetricValue"] { font-size: 2.2rem !important; font-weight: 800 !important; color: #1e40af !important; }
-    
-    /* Cajas de Tendencia */
     .trend-box { padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 10px; border: 1px solid rgba(0,0,0,0.1); }
     .pos-box { background-color: #dcfce7; color: #14532d; }
     .neg-box { background-color: #fee2e2; color: #7f1d1d; }
-    
-    /* Fichas Inmuebles e Inmuebles */
-    .house-card, .job-card {
-        background: white;
-        padding: 15px;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        margin-bottom: 10px;
-        color: #000000;
-    }
+    .house-card, .job-card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 10px; color: #000000; }
     .house-card { border-top: 5px solid #1e40af; }
     .price-tag { color: #1e40af; font-size: 1.4rem; font-weight: bold; }
     .area-tag { background: #f3f4f6; padding: 2px 8px; border-radius: 5px; font-size: 0.8rem; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🚀 Radar BCN Premium")
-st.write(f"📅 {datetime.now().strftime('%d/%m/%Y | %H:%Mh')}")
+# FUNCIÓN DE AUTOMATIZACIÓN FINANCIERA
+def get_live_data(ticker):
+    try:
+        # Descarga datos: 1 día para el precio, 3 meses para la tendencia
+        df = yf.download(ticker, period="4mo", interval="1d")
+        actual = df['Close'].iloc[-1]
+        ayer = df['Close'].iloc[-2]
+        hace_15d = df['Close'].iloc[-15]
+        hace_3m = df['Close'].iloc[0]
+        
+        v24h = ((actual - ayer) / ayer) * 100
+        v15d = ((actual - hace_15d) / hace_15d) * 100
+        v3m = ((actual - hace_3m) / hace_3m) * 100
+        
+        return f"{actual:,.2f}", f"{v24h:+.2f}%", f"{v15d:+.2f}%", f"{v3m:+.2f}%"
+    except:
+        return "Cargando...", "0%", "0%", "0%"
 
-tabs = st.tabs(["🏠 Inmuebles (Top 10)", "💼 Empleo", "📈 Finanzas Full"])
+st.title("🚀 Radar BCN Premium v12.0")
+st.write(f"Última actualización real: {datetime.now().strftime('%H:%Mh')}")
 
-# --- TAB 1: INMUEBLES ---
+tabs = st.tabs(["🏠 Inmuebles (Top 10)", "💼 Empleo", "📈 Finanzas REAL TIME"])
+
+# --- TAB 1: INMUEBLES (TOP 10) ---
 with tabs[0]:
-    st.header("📍 Últimas Oportunidades < 150.000€")
     inmuebles = [
         {"zona": "Eixample Esquerra", "tipo": "Local Comercial", "precio": "115.000€", "m2": "45m²", "ref": "Bajo con escaparate"},
         {"zona": "Poblenou", "tipo": "Oficina Loft", "precio": "139.000€", "m2": "55m²", "ref": "Cerca de zona tecnológica"},
@@ -71,37 +77,31 @@ with tabs[1]:
             st.markdown(f'<div class="job-card" style="border-left: 6px solid #2563eb;"><b>{t}</b><br>Sueldo: {s}</div>', unsafe_allow_html=True)
             st.link_button(f"Aplicar", "https://www.infojobs.net", key=t+"_c")
 
-# --- TAB 3: FINANZAS ---
+# --- TAB 3: FINANZAS AUTOMÁTICAS ---
 with tabs[2]:
-    st.header("Análisis de Mercado")
+    st.header("Análisis de Mercado (Datos Yahoo Finance)")
+    
+    # Conexión real con Tickers internacionales
+    btc_p, btc_24, btc_15, btc_3m = get_live_data("BTC-USD")
+    oro_p, oro_24, oro_15, oro_3m = get_live_data("GC=F") # Futuros del Oro
+    sp_p, sp_24, sp_15, sp_3m = get_live_data("^GSPC") # S&P 500
+
     def card_financiera(titulo, precio, d24, d15, m3):
         st.markdown(f"### {titulo}")
         col1, col2, col3 = st.columns(3)
-        col1.metric("Precio / 24h", precio, d24)
+        col1.metric("Hoy / 24h", precio, d24)
         def get_class(val): return "pos-box" if "+" in val else "neg-box"
         col2.markdown(f'<div class="trend-box {get_class(d15)}"><div style="font-size:0.8rem;">15 DÍAS</div><div style="font-size:1.4rem; font-weight:800;">{d15}</div></div>', unsafe_allow_html=True)
         col3.markdown(f'<div class="trend-box {get_class(m3)}"><div style="font-size:0.8rem;">3 MESES</div><div style="font-size:1.4rem; font-weight:800;">{m3}</div></div>', unsafe_allow_html=True)
         st.divider()
 
-    card_financiera("₿ Bitcoin (BTC)", "$74.021", "+2.5%", "+12.4%", "+45.0%")
-    card_financiera("✨ Oro (XAU)", "2.415,50 €", "-0.8%", "+3.2%", "+8.7%")
-    card_financiera("📉 Euríbor 12m", "2,767%", "-0.01%", "-0.12%", "-0.45%")
-    card_financiera("🇺🇸 S&P 500", "5.210 pts", "+0.1%", "-1.5%", "+10.2%")
+    card_financiera("₿ Bitcoin (USD)", f"${btc_p}", btc_24, btc_15, btc_3m)
+    card_financiera("✨ Oro (Onza)", f"{oro_p} €", oro_24, oro_15, oro_3m)
+    card_financiera("🇺🇸 S&P 500 (Bolsa)", f"{sp_p} pts", sp_24, sp_15, sp_3m)
 
-    # --- PARTE DE FINANCIACIÓN Y AHORRO ---
     st.subheader("🏦 Financiación y Ahorro")
     c_a, c_b = st.columns(2)
     with c_a:
-        st.write("**Coste del Dinero (Préstamos)**")
-        df_p = pd.DataFrame({
-            "Tipo": ["Hipoteca Fija", "Hipoteca Var.", "P. Personal", "P. Coche"],
-            "TAE": ["2.20%", "Euríbor+0.45%", "6.50%", "5.90%"]
-        })
-        st.dataframe(df_p, use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame({"Préstamos": ["Hip. Fija", "P. Personal"], "TAE": ["2.20%", "6.50%"]}), use_container_width=True, hide_index=True)
     with c_b:
-        st.write("**Rentabilidad (Ahorro)**")
-        df_a = pd.DataFrame({
-            "Producto": ["Depósito Raisin", "Cuenta Remun.", "Letras Tesoro", "Banca Tradic."],
-            "Paga": ["2.85%", "2.10%", "3.15%", "0.75%"]
-        })
-        st.dataframe(df_a, use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame({"Ahorro": ["Raisin", "Letras Tesoro"], "Paga": ["2.85%", "3.15%"]}), use_container_width=True, hide_index=True)
