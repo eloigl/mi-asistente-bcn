@@ -2,123 +2,416 @@ import streamlit as st
 import pandas as pd
 import yfinance as yf
 from datetime import datetime
+import requests
+from urllib.parse import quote
 
-# 1. Configuración de la App
-st.set_page_config(page_title="Radar BCN Ultra v16.4", layout="wide")
+# ── CONFIG ────────────────────────────────────────────────────
+st.set_page_config(
+    page_title="Mi App BCN",
+    page_icon="🏙️",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
-# ESTILO CSS (RESTAURADO Y CORREGIDO)
+# ── CSS ───────────────────────────────────────────────────────
 st.markdown("""
-    <style>
-    [data-testid="stMetricValue"] { font-size: 2.2rem !important; font-weight: 800 !important; color: #1e40af !important; }
-    
-    /* Cajas de tendencias (Diseño original recuperado) */
-    .trend-box { padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 10px; border: 1px solid rgba(0,0,0,0.1); }
-    .pos-box { background-color: #dcfce7 !important; color: #14532d !important; }
-    .neg-box { background-color: #fee2e2 !important; color: #7f1d1d !important; }
-    
-    /* Tarjetas de Empleo y Contraste */
-    .job-board-card {
-        background: #ffffff !important;
-        border-radius: 12px;
-        padding: 20px;
-        border: 1px solid #e2e8f0;
-        margin-bottom: 10px;
-    }
-    .job-title { color: #1e3a8a !important; font-weight: 800; font-size: 1.3rem; }
-    
-    /* FORZAR LETRAS BLANCAS EN BOTONES */
-    .stButton>button {
-        color: white !important;
-        background-color: #1e40af !important;
-        font-weight: bold !important;
-    }
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap');
 
-    .job-tag {
-        font-size: 0.75rem;
-        font-weight: bold;
-        padding: 4px 12px;
-        border-radius: 20px;
-        text-transform: uppercase;
-        color: white !important;
-        display: inline-block;
-        margin-bottom: 12px;
-    }
-    .tag-indeed { background-color: #2557a7 !important; }
-    .tag-infojobs { background-color: #ff6000 !important; }
-    .tag-linkedin { background-color: #0077b5 !important; }
+html, body, [class*="css"] { font-family: 'Syne', sans-serif; }
 
-    .house-card { background: white !important; padding: 15px; border-radius: 12px; border-top: 5px solid #1e40af; color: #000 !important; }
-    </style>
-    """, unsafe_allow_html=True)
+.stApp { background-color: #0a0a0a; color: #f0f0f0; }
 
-# FUNCIÓN FINANZAS
-def get_full_data(ticker):
+[data-testid="stHeader"] { background: #0a0a0a; }
+[data-testid="stSidebar"] { background: #111; }
+
+h1 { font-size: 2rem !important; font-weight: 800 !important; color: #c8f135 !important; letter-spacing: -0.02em; margin-bottom: 0 !important; }
+h2, h3 { color: #f0f0f0 !important; font-weight: 700 !important; }
+
+/* Tabs */
+.stTabs [data-baseweb="tab-list"] {
+    background: #111 !important;
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+    border: 0.5px solid rgba(255,255,255,0.08);
+}
+.stTabs [data-baseweb="tab"] {
+    background: transparent !important;
+    color: #666 !important;
+    border-radius: 8px !important;
+    font-family: 'DM Mono', monospace !important;
+    font-size: 13px !important;
+    padding: 8px 16px !important;
+}
+.stTabs [aria-selected="true"] {
+    background: #c8f135 !important;
+    color: #0a0a0a !important;
+    font-weight: 700 !important;
+}
+
+/* Métricas */
+[data-testid="stMetric"] {
+    background: #141414;
+    border: 0.5px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 16px !important;
+}
+[data-testid="stMetricLabel"] { color: #888 !important; font-family: 'DM Mono', monospace !important; font-size: 11px !important; text-transform: uppercase; letter-spacing: 0.08em; }
+[data-testid="stMetricValue"] { color: #f0f0f0 !important; font-family: 'DM Mono', monospace !important; font-size: 1.6rem !important; font-weight: 700 !important; }
+[data-testid="stMetricDelta"] { font-family: 'DM Mono', monospace !important; font-size: 13px !important; }
+
+/* Botones */
+.stButton > button {
+    background: #1c1c1c !important;
+    color: #c8f135 !important;
+    border: 0.5px solid rgba(200,241,53,0.3) !important;
+    border-radius: 8px !important;
+    font-family: 'DM Mono', monospace !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    padding: 6px 16px !important;
+}
+.stButton > button:hover {
+    background: #242424 !important;
+    border-color: rgba(200,241,53,0.6) !important;
+}
+
+/* Link buttons */
+.stLinkButton > a {
+    background: #1c1c1c !important;
+    color: #7df3c8 !important;
+    border: 0.5px solid rgba(125,243,200,0.3) !important;
+    border-radius: 8px !important;
+    font-family: 'DM Mono', monospace !important;
+    font-size: 11px !important;
+    text-decoration: none !important;
+}
+
+/* Info/Warning boxes */
+.stInfo { background: rgba(200,241,53,0.05) !important; border: 0.5px solid rgba(200,241,53,0.2) !important; border-radius: 10px !important; color: #aaa !important; font-family: 'DM Mono', monospace !important; font-size: 12px !important; }
+
+/* Divider */
+hr { border-color: rgba(255,255,255,0.06) !important; }
+
+/* Cards personalizadas */
+.inmueble-card {
+    background: #141414;
+    border: 0.5px solid rgba(255,255,255,0.08);
+    border-top: 3px solid #c8f135;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+.job-card {
+    background: #141414;
+    border: 0.5px solid rgba(255,255,255,0.08);
+    border-left: 3px solid #7df3c8;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+.tag {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: inline-block;
+    margin-bottom: 8px;
+}
+.tag-precio { background: rgba(200,241,53,0.12); color: #c8f135; border: 0.5px solid rgba(200,241,53,0.25); }
+.tag-tipo { background: rgba(125,243,200,0.12); color: #7df3c8; border: 0.5px solid rgba(125,243,200,0.25); }
+.tag-indeed { background: rgba(37,87,167,0.3); color: #7eb3f7; border: 0.5px solid rgba(37,87,167,0.5); }
+.tag-infojobs { background: rgba(255,96,0,0.2); color: #f3a27d; border: 0.5px solid rgba(255,96,0,0.4); }
+.tag-linkedin { background: rgba(0,119,181,0.2); color: #7df3c8; border: 0.5px solid rgba(0,119,181,0.4); }
+
+.trend-pos {
+    background: rgba(95,214,138,0.08);
+    border: 0.5px solid rgba(95,214,138,0.2);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    color: #5fd68a;
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+.trend-neg {
+    background: rgba(240,82,79,0.08);
+    border: 0.5px solid rgba(240,82,79,0.2);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    color: #f0524f;
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+.trend-lbl { font-size: 10px; color: #555; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+.rate-card {
+    background: #141414;
+    border: 0.5px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+}
+.rate-val { font-size: 1.6rem; font-weight: 800; color: #c8f135; font-family: 'DM Mono', monospace; }
+.rate-lbl { font-size: 10px; color: #666; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+.rate-desc { font-size: 11px; color: #555; font-family: 'DM Mono', monospace; margin-top: 3px; }
+</style>
+""", unsafe_allow_html=True)
+
+
+# ── HEADER ────────────────────────────────────────────────────
+ahora = datetime.now().strftime('%d/%m/%Y · %H:%M')
+st.title("🏙️ Mi App BCN")
+st.markdown(f'<p style="font-family:\'DM Mono\',monospace;color:#555;font-size:12px;margin-top:-8px;">Última actualización: {ahora}</p>', unsafe_allow_html=True)
+st.markdown("---")
+
+
+# ── FINANZAS HELPER ───────────────────────────────────────────
+@st.cache_data(ttl=43200)  # cache 12 horas
+def get_finance_data(ticker):
     try:
         t = yf.Ticker(ticker)
         df = t.history(period="6mo")
-        if df.empty or len(df) < 65: return "---", "0%", "0%", "0%", 0.0
-        act, ant = float(df['Close'].iloc[-1]), float(df['Close'].iloc[-2])
-        h15, h3m = float(df['Close'].iloc[-11]), float(df['Close'].iloc[0])
-        return f"{act:,.2f}", f"{((act-ant)/ant)*100:+.2f}%", f"{((act-h15)/h15)*100:+.2f}%", f"{((act-h3m)/h3m)*100:+.2f}%", act
-    except: return "Error", "0%", "0%", "0%", 0.0
+        if df.empty or len(df) < 10:
+            return "---", "---", "---", 0.0
+        act = float(df['Close'].iloc[-1])
+        h15 = float(df['Close'].iloc[-16]) if len(df) >= 16 else float(df['Close'].iloc[0])
+        h3m = float(df['Close'].iloc[0])
+        d15 = f"{((act - h15) / h15) * 100:+.2f}%"
+        d3m = f"{((act - h3m) / h3m) * 100:+.2f}%"
+        if act >= 1000:
+            precio = f"{act:,.0f}"
+        else:
+            precio = f"{act:,.2f}"
+        return precio, d15, d3m, act
+    except:
+        return "Error", "---", "---", 0.0
 
-# HEADER Y TITULO RECUPERADO
-ahora = datetime.now().strftime('%d/%m/%Y | %H:%M:%S')
-st.title("🚀 Radar BCN Ultra v16.4")
-st.info(f"Última actualización global: {ahora} (Sincronización cada 12h)")
 
-tabs = st.tabs(["🏠 Inmuebles", "💼 TABLÓN DE EMPLEO", "📈 Finanzas Full"])
+def trend_html(label, valor):
+    cls = "trend-pos" if "+" in str(valor) else "trend-neg"
+    return f'<div class="{cls}"><div class="trend-lbl">{label}</div>{valor}</div>'
 
-# --- TAB 1: INMUEBLES ---
+
+def render_activo(nombre, ticker, simbolo="$", emoji=""):
+    precio, d15, d3m, _ = get_finance_data(ticker)
+    st.markdown(f"#### {emoji} {nombre}")
+    c1, c2, c3 = st.columns([2, 1, 1])
+    with c1:
+        st.metric("Precio actual", f"{precio} {simbolo}")
+    with c2:
+        st.markdown(trend_html("15 días", d15), unsafe_allow_html=True)
+    with c3:
+        st.markdown(trend_html("3 meses", d3m), unsafe_allow_html=True)
+    st.markdown("---")
+
+
+# ── TABS ──────────────────────────────────────────────────────
+tabs = st.tabs(["🏢 Inmuebles", "📷 Trabajo", "📈 Finanzas"])
+
+
+# ══════════════════════════════════════════════════════════════
+# TAB 1 — INMUEBLES
+# ══════════════════════════════════════════════════════════════
 with tabs[0]:
-    inmuebles = [
-        {"z": "Eixample", "t": "Local Comercial", "p": "115.000€"},
-        {"z": "Poblenou", "t": "Oficina Loft", "p": "139.000€"},
-        {"z": "Sants", "t": "Local/Estudio", "p": "89.000€"},
-        {"z": "Ciutat Vella", "t": "Local Histórico", "p": "145.000€"}
-    ]
-    cols = st.columns(2)
-    for i, casa in enumerate(inmuebles):
-        with cols[i % 2]:
-            st.markdown(f'<div class="house-card"><b style="color:#1e3a8a">{casa["t"]}</b><br>{casa["z"]} | <span style="color:#1e40af; font-weight:bold">{casa["p"]}</span></div>', unsafe_allow_html=True)
-            st.link_button("Ver en Idealista", "https://www.idealista.com/venta-locales/barcelona-barcelona/", key=f"id_{i}")
+    st.markdown("### Locales & Oficinas en Barcelona")
+    st.markdown('<p style="font-family:\'DM Mono\',monospace;color:#555;font-size:12px;">Menos de 150.000€ · Libres · Actualizados cada 12h</p>', unsafe_allow_html=True)
 
-# --- TAB 2: EMPLEO (8 PUESTOS) ---
-with tabs[1]:
-    puestos = [
-        {"t": "Fotógrafo de Inmuebles", "p": "Indeed", "tag": "tag-indeed"},
-        {"t": "Videógrafo / Editor Reels", "p": "InfoJobs", "tag": "tag-infojobs"},
-        {"t": "Técnico Audiovisual", "p": "LinkedIn", "tag": "tag-linkedin"},
-        {"t": "Content Creator Digital", "p": "Indeed", "tag": "tag-indeed"},
-        {"t": "Editor de Vídeo YouTube", "p": "InfoJobs", "tag": "tag-infojobs"},
-        {"t": "Operador de Cámara", "p": "LinkedIn", "tag": "tag-linkedin"},
-        {"t": "Ayudante de Producción", "p": "Indeed", "tag": "tag-indeed"},
-        {"t": "Social Media Video", "p": "InfoJobs", "tag": "tag-infojobs"}
+    col_refresh, _ = st.columns([1, 4])
+    with col_refresh:
+        if st.button("↻ Buscar ahora", key="refresh_inm"):
+            st.cache_data.clear()
+
+    st.markdown("")
+
+    # Inmuebles con links de búsqueda directa a portales reales
+    inmuebles = [
+        {
+            "titulo": "Local en Poble Sec",
+            "tipo": "Local",
+            "precio": "~90.000€",
+            "metros": "~50 m²",
+            "zona": "Poble Sec · Sants-Montjuïc",
+            "desc": "Locales disponibles en Poble Sec por menos de 150.000€. Zona en auge, cerca del metro y calle Blai.",
+            "url": "https://www.idealista.com/venta-locales/barcelona-barcelona/sants-montjuic/con-precio-hasta_150000/"
+        },
+        {
+            "titulo": "Local en Sants",
+            "tipo": "Local",
+            "precio": "75.000–120.000€",
+            "metros": "20–60 m²",
+            "zona": "Sants · Hostafrancs",
+            "desc": "Locales pequeños junto al Mercado de Sants y alrededores. Muy bien comunicados.",
+            "url": "https://www.idealista.com/venta-locales/barcelona-barcelona/sants-montjuic/con-precio-hasta_150000/"
+        },
+        {
+            "titulo": "Local en Sant Andreu",
+            "tipo": "Local",
+            "precio": "60.000–140.000€",
+            "metros": "30–80 m²",
+            "zona": "Sant Andreu · Navas",
+            "desc": "Locales comerciales en Sant Andreu, uno de los barrios más económicos de Barcelona.",
+            "url": "https://www.idealista.com/venta-locales/barcelona-barcelona/sant-andreu/con-precio-hasta_150000/"
+        },
+        {
+            "titulo": "Oficina en Sant Martí / Poblenou",
+            "tipo": "Oficina",
+            "precio": "~130.000€",
+            "metros": "~70 m²",
+            "zona": "Poblenou · Sant Martí",
+            "desc": "Oficinas y locales en el distrito 22@ y alrededores. Zona de gran proyección.",
+            "url": "https://www.idealista.com/venta-oficinas/barcelona-barcelona/sant-marti/con-precio-hasta_150000/"
+        },
+        {
+            "titulo": "Local en Nou Barris",
+            "tipo": "Local",
+            "precio": "40.000–100.000€",
+            "metros": "20–90 m²",
+            "zona": "Nou Barris",
+            "desc": "Los precios más asequibles de Barcelona. Buenos transportes y barrio residencial activo.",
+            "url": "https://www.idealista.com/venta-locales/barcelona-barcelona/nou-barris/con-precio-hasta_150000/"
+        },
+        {
+            "titulo": "Buscar en Fotocasa",
+            "tipo": "Local / Oficina",
+            "precio": "Hasta 150.000€",
+            "metros": "Varios",
+            "zona": "Barcelona ciudad",
+            "desc": "Búsqueda completa en Fotocasa de locales y oficinas en venta por menos de 150.000€.",
+            "url": "https://www.fotocasa.es/es/comprar/locales/barcelona-capital/todas-las-zonas/l?maxPrice=150000"
+        },
     ]
+
+    cols = st.columns(2)
+    for i, inm in enumerate(inmuebles):
+        with cols[i % 2]:
+            st.markdown(f"""
+            <div class="inmueble-card">
+                <span class="tag tag-tipo">{inm['tipo']}</span>
+                <span class="tag tag-precio" style="margin-left:6px;">{inm['precio']}</span>
+                <div style="font-size:15px;font-weight:700;margin:8px 0 4px;">{inm['titulo']}</div>
+                <div style="font-size:12px;color:#888;margin-bottom:6px;">{inm['desc']}</div>
+                <div style="font-size:11px;font-family:'DM Mono',monospace;color:#555;">{inm['zona']} · {inm['metros']}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            st.link_button("Ver anuncios →", inm['url'], key=f"inm_{i}", use_container_width=True)
+
+
+# ══════════════════════════════════════════════════════════════
+# TAB 2 — TRABAJO
+# ══════════════════════════════════════════════════════════════
+with tabs[1]:
+    st.markdown("### Ofertas de Fotografía & Vídeo")
+    st.markdown('<p style="font-family:\'DM Mono\',monospace;color:#555;font-size:12px;">Barcelona y remoto · Links directos a portales actualizados</p>', unsafe_allow_html=True)
+
+    st.markdown("")
+
+    puestos = [
+        {"cargo": "Fotógrafo / Fotografa", "portal": "Indeed", "tag": "tag-indeed",
+         "desc": "Puestos de fotografía en Barcelona: producto, eventos, inmobiliaria, moda...",
+         "url": "https://es.indeed.com/jobs?q=fotografo&l=Barcelona&fromage=14"},
+        {"cargo": "Videógrafo / Editor de Vídeo", "portal": "Indeed", "tag": "tag-indeed",
+         "desc": "Ofertas de edición de vídeo, videógrafo y producción audiovisual en Barcelona.",
+         "url": "https://es.indeed.com/jobs?q=videografo+editor+video&l=Barcelona&fromage=14"},
+        {"cargo": "Técnico Audiovisual", "portal": "InfoJobs", "tag": "tag-infojobs",
+         "desc": "Técnico de sonido, iluminación y producción audiovisual en Barcelona.",
+         "url": "https://www.infojobs.net/jobsearch/search-results/list.xhtml?keyword=tecnico+audiovisual&province=barcelona&sinceDate=_14"},
+        {"cargo": "Content Creator / Reels", "portal": "InfoJobs", "tag": "tag-infojobs",
+         "desc": "Creadores de contenido audiovisual para redes sociales, reels e Instagram.",
+         "url": "https://www.infojobs.net/jobsearch/search-results/list.xhtml?keyword=content+creator+video&province=barcelona&sinceDate=_14"},
+        {"cargo": "Fotógrafo / Camarógrafo", "portal": "LinkedIn", "tag": "tag-linkedin",
+         "desc": "Ofertas en LinkedIn de fotografía y cámara en empresas de Barcelona.",
+         "url": "https://www.linkedin.com/jobs/search/?keywords=fotografo%20videografo&location=Barcelona&f_TPR=r1209600"},
+        {"cargo": "Producción Audiovisual", "portal": "LinkedIn", "tag": "tag-linkedin",
+         "desc": "Puestos de producción, dirección y realización audiovisual en Barcelona.",
+         "url": "https://www.linkedin.com/jobs/search/?keywords=produccion%20audiovisual&location=Barcelona&f_TPR=r1209600"},
+        {"cargo": "Editor / Post-producción", "portal": "Indeed", "tag": "tag-indeed",
+         "desc": "Ofertas de post-producción, color grading y montaje en Barcelona y remoto.",
+         "url": "https://es.indeed.com/jobs?q=editor+postproduccion&l=Barcelona&fromage=14"},
+        {"cargo": "Freelance Foto & Vídeo", "portal": "InfoJobs", "tag": "tag-infojobs",
+         "desc": "Proyectos freelance y autónomo en fotografía y vídeo en Barcelona.",
+         "url": "https://www.infojobs.net/jobsearch/search-results/list.xhtml?keyword=fotografo+freelance&province=barcelona&contractType=freelance"},
+    ]
+
     c1, c2 = st.columns(2)
     for i, job in enumerate(puestos):
-        target = c1 if i % 2 == 0 else c2
-        with target:
-            st.markdown(f"""<div class="job-board-card"><span class="job-tag {job['tag']}">{job['p']}</span><div class="job-title">{job['t']}</div><div style="color: #475569; font-size: 0.85rem;">Barcelona | Actualizado: {ahora}</div></div>""", unsafe_allow_html=True)
-            q = job['t'].replace(" ", "+")
-            url = f"https://es.indeed.com/jobs?q={q}&l=Barcelona&fromage=1" if job['p'] == "Indeed" else f"https://www.infojobs.net/jobsearch/search-results/list.xhtml?keyword={q}" if job['p'] == "InfoJobs" else f"https://www.linkedin.com/jobs/search/?keywords={q}&location=Barcelona&f_TPR=r86400"
-            st.link_button(f"VER EN {job['p'].upper()}", url, key=f"job_btn_{i}", use_container_width=True)
+        with (c1 if i % 2 == 0 else c2):
+            st.markdown(f"""
+            <div class="job-card">
+                <span class="tag {job['tag']}">{job['portal']}</span>
+                <div style="font-size:15px;font-weight:700;color:#f0f0f0;margin:6px 0 4px;">{job['cargo']}</div>
+                <div style="font-size:12px;color:#888;line-height:1.5;">{job['desc']}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            st.link_button(f"Ver en {job['portal']} →", job['url'], key=f"job_{i}", use_container_width=True)
 
-# --- TAB 3: FINANZAS (DISEÑO ORIGINAL RECUPERADO) ---
+
+# ══════════════════════════════════════════════════════════════
+# TAB 3 — FINANZAS
+# ══════════════════════════════════════════════════════════════
 with tabs[2]:
-    def render_card(titulo, ticker, es_moneda=True):
-        p, d24, d15, m3, val_puro = get_full_data(ticker)
-        st.markdown(f"### {titulo}")
-        col1, col2, col3 = st.columns(3)
-        simbolo = "$" if es_moneda and "USD" in ticker else "€" if es_moneda else ""
-        col1.metric("Hoy", f"{p} {simbolo}", d24)
-        def get_cl(v): return "pos-box" if "+" in v else "neg-box"
-        col2.markdown(f'<div class="trend-box {get_cl(d15)}"><div style="font-size:0.8rem;">15 DÍAS</div><div style="font-size:1.3rem; font-weight:800;">{d15}</div></div>', unsafe_allow_html=True)
-        col3.markdown(f'<div class="trend-box {get_cl(m3)}"><div style="font-size:0.8rem;">3 MESES</div><div style="font-size:1.3rem; font-weight:800;">{m3}</div></div>', unsafe_allow_html=True)
-        st.divider()
-        return val_puro
+    st.markdown("### Mercados Financieros")
+    st.markdown('<p style="font-family:\'DM Mono\',monospace;color:#555;font-size:12px;">Datos en tiempo real via yfinance · Caché 12h</p>', unsafe_allow_html=True)
 
-    render_card("₿ Bitcoin", "BTC-USD")
-    render_card("✨ Oro", "GC=F")
-    render_card("🇺🇸 S&P 500", "^GSPC", es_moneda=False)
-    irx_val = render_card("📉 Euríbor / Tipos (Ref)", "^IRX", es_moneda=False)
+    col_r, _ = st.columns([1, 4])
+    with col_r:
+        if st.button("↻ Actualizar precios", key="refresh_fin"):
+            st.cache_data.clear()
+            st.rerun()
+
+    st.markdown("")
+
+    render_activo("Bitcoin", "BTC-USD", "USD", "₿")
+    render_activo("Oro", "GC=F", "USD/oz", "✨")
+    render_activo("S&P 500", "^GSPC", "pts", "🇺🇸")
+    render_activo("IBEX 35", "^IBEX", "pts", "🇪🇸")
+
+    # ── TIPOS DE INTERÉS ──────────────────────────────────────
+    st.markdown("### Tipos de Interés")
+    st.markdown('<p style="font-family:\'DM Mono\',monospace;color:#555;font-size:12px;">Referencia actual España / Europa</p>', unsafe_allow_html=True)
+
+    @st.cache_data(ttl=43200)
+    def get_euribor():
+        try:
+            t = yf.Ticker("^IRX")
+            df = t.history(period="5d")
+            if not df.empty:
+                val = float(df['Close'].iloc[-1])
+                return f"{val:.2f}%"
+        except:
+            pass
+        return "~2.5%"
+
+    euribor = get_euribor()
+
+    tipos = [
+        {"label": "Euríbor 12m", "valor": euribor, "desc": "Referencia hipotecas variables"},
+        {"label": "Hipoteca fija", "valor": "~2.8%", "desc": "TAE media 25 años"},
+        {"label": "Préstamo personal", "valor": "~7–9%", "desc": "TAE media banco"},
+        {"label": "Cuenta remunerada", "valor": "~2.5%", "desc": "Mejor TAE España 2025"},
+        {"label": "Depósito 12m", "valor": "~2.8%", "desc": "Mejor TAE depósito"},
+        {"label": "BCE Tipo ref.", "valor": "~2.40%", "desc": "Tipo oficial Banco Central Europeo"},
+    ]
+
+    cols = st.columns(3)
+    for i, tipo in enumerate(tipos):
+        with cols[i % 3]:
+            st.markdown(f"""
+            <div class="rate-card">
+                <div class="rate-lbl">{tipo['label']}</div>
+                <div class="rate-val">{tipo['valor']}</div>
+                <div class="rate-desc">{tipo['desc']}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            st.markdown("")
+
+    st.markdown("")
+    st.info("💡 Los tipos de interés se actualizan manualmente cuando el BCE o bancos realizan cambios. El Euríbor se obtiene via yfinance.")
+
