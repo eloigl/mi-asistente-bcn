@@ -20,86 +20,75 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# FUNCIÓN DE AUTOMATIZACIÓN FINANCIERA
+# FUNCIÓN DE AUTOMATIZACIÓN ULTRA-ROBUSTA
 def get_live_data(ticker):
     try:
-        df = yf.download(ticker, period="6mo", interval="1d", progress=False)
-        if df.empty or len(df) < 65:
-            return "Cargando...", "0%", "0%", "0%"
+        # Descarga simple sin hilos ni progresos para evitar bloqueos
+        ticker_obj = yf.Ticker(ticker)
+        df = ticker_obj.history(period="6mo")
+        
+        if df.empty or len(df) < 10:
+            return "---", "0%", "0%", "0%"
+            
         actual = float(df['Close'].iloc[-1])
         ayer = float(df['Close'].iloc[-2])
-        hace_15d = float(df['Close'].iloc[-11])
-        hace_3m = float(df['Close'].iloc[-63])
-        v24h, v15d, v3m = ((actual-ayer)/ayer)*100, ((actual-hace_15d)/hace_15d)*100, ((actual-hace_3m)/hace_3m)*100
+        # Buscamos posiciones seguras hacia atrás
+        hace_15d = float(df['Close'].iloc[-11]) if len(df) > 11 else ayer
+        hace_3m = float(df['Close'].iloc[0])
+        
+        v24h = ((actual - ayer) / ayer) * 100
+        v15d = ((actual - hace_15d) / hace_15d) * 100
+        v3m = ((actual - hace_3m) / hace_3m) * 100
+        
         return f"{actual:,.2f}", f"{v24h:+.2f}%", f"{v15d:+.2f}%", f"{v3m:+.2f}%"
-    except:
-        return "Sincronizando...", "0%", "0%", "0%"
+    except Exception:
+        return "Error Red", "0%", "0%", "0%"
 
-st.title("🚀 Radar BCN Premium v12.2")
-st.write(f"Sincronización activa: {datetime.now().strftime('%d/%m/%Y | %H:%Mh')}")
+st.title("🚀 Radar BCN Premium v12.3")
+st.write(f"Sincronización: {datetime.now().strftime('%d/%m/%Y | %H:%Mh')}")
 
-tabs = st.tabs(["🏠 Inmuebles (Top 10)", "💼 Empleo", "📈 Finanzas REAL TIME"])
+tabs = st.tabs(["🏠 Inmuebles", "💼 Empleo", "📈 Finanzas"])
 
 # --- TAB 1: INMUEBLES ---
 with tabs[0]:
-    st.header("📍 Últimas Oportunidades < 150.000€")
     inmuebles = [
         {"zona": "Eixample Esquerra", "tipo": "Local Comercial", "precio": "115.000€", "m2": "45m²", "ref": "Bajo con escaparate"},
         {"zona": "Poblenou", "tipo": "Oficina Loft", "precio": "139.000€", "m2": "55m²", "ref": "Cerca de zona tecnológica"},
         {"zona": "Sants", "tipo": "Local/Estudio", "precio": "89.000€", "m2": "38m²", "ref": "Ideal inversión"},
         {"zona": "Ciutat Vella", "tipo": "Local Histórico", "precio": "145.000€", "m2": "60m²", "ref": "Zona de alto paso"},
-        {"zona": "Gràcia", "tipo": "Despacho Profesional", "precio": "120.000€", "m2": "42m²", "ref": "Exterior, mucha luz"},
-        {"zona": "Sant Martí", "tipo": "Local diáfano", "precio": "95.000€", "m2": "50m²", "ref": "Recién reformado"},
-        {"zona": "Les Corts", "tipo": "Oficina planta baja", "precio": "130.000€", "m2": "48m²", "ref": "Cerca de Av. Madrid"},
-        {"zona": "Sagrada Família", "tipo": "Local pequeño", "precio": "75.000€", "m2": "30m²", "ref": "Oportunidad por precio"},
-        {"zona": "Horta", "tipo": "Local comercial", "precio": "110.000€", "m2": "65m²", "ref": "Gran fachada"},
-        {"zona": "Poble Sec", "tipo": "Estudio/Local", "precio": "99.000€", "m2": "40m²", "ref": "A 2 min del Metro"}
+        {"zona": "Gràcia", "tipo": "Despacho Profesional", "precio": "120.000€", "m2": "42m²", "ref": "Exterior, mucha luz"}
     ]
     cols = st.columns(2)
     for i, casa in enumerate(inmuebles):
         with cols[i % 2]:
             st.markdown(f'<div class="house-card"><span class="area-tag">{casa["zona"]}</span><div style="margin-top:10px;"><b>{casa["tipo"]}</b></div><div class="price-tag">{casa["precio"]}</div><div style="font-size:0.9rem; color:#444;">{casa["m2"]} | {casa["ref"]}</div></div>', unsafe_allow_html=True)
-            # ESTA ES LA LÍNEA QUE DABA EL ERROR, YA ESTÁ CERRADA:
-            st.link_button(f"Ver en Idealista", "https://www.idealista.com/venta-locales/barcelona-barcelona/con-precio-hasta_150000/", key=f"btn_{i}")
+            st.link_button(f"Ver Idealista", "https://www.idealista.com/venta-locales/barcelona-barcelona/con-precio-hasta_150000/", key=f"house_{i}")
 
 # --- TAB 2: EMPLEO ---
 with tabs[1]:
     c1, c2 = st.columns(2)
     with c1:
         st.subheader("🛠️ Freelance")
-        for t, p in [("Fotógrafo Inmuebles", "60€/s"), ("Editor Reels", "Proyecto"), ("Cámara Eventos", "250€/d"), ("Retocador Freelance", "Factura"), ("Operador Dron", "A conv.")]:
-            st.markdown(f'<div class="job-card" style="border-left: 6px solid #16a34a;"><b>{t}</b><br>Pago: {p}</div>', unsafe_allow_html=True)
-            st.link_button(f"Aplicar", "https://es.indeed.com", key=t+"_f")
+        for t, p in [("Fotógrafo", "60€/s"), ("Editor Reels", "Proyecto"), ("Dron", "A conv.")]:
+            st.markdown(f'<div class="job-card" style="border-left: 6px solid #16a34a;"><b>{t}</b><br>{p}</div>', unsafe_allow_html=True)
     with c2:
         st.subheader("👔 Contrato")
-        for t, s in [("Videógrafo Content", "25k-30k"), ("Fotógrafo Producto", "Jornada"), ("Ayudante Cámara", "Convenio"), ("Editor Post-Prod", "24k"), ("Técnico AV", "22k")]:
-            st.markdown(f'<div class="job-card" style="border-left: 6px solid #2563eb;"><b>{t}</b><br>Sueldo: {s}</div>', unsafe_allow_html=True)
-            st.link_button(f"Aplicar", "https://www.infojobs.net", key=t+"_c")
+        for t, s in [("Videógrafo", "25k"), ("Post-Prod", "24k"), ("Técnico AV", "22k")]:
+            st.markdown(f'<div class="job-card" style="border-left: 6px solid #2563eb;"><b>{t}</b><br>{s}</div>', unsafe_allow_html=True)
 
 # --- TAB 3: FINANZAS ---
 with tabs[2]:
-    st.header("📈 Análisis de Mercado (Live)")
-    with st.spinner('Actualizando cotizaciones...'):
-        btc_p, btc_24, btc_15, btc_3m = get_live_data("BTC-USD")
-        oro_p, oro_24, oro_15, oro_3m = get_live_data("GC=F")
-        sp_p, sp_24, sp_15, sp_3m = get_live_data("^GSPC")
-
-    def card_financiera(titulo, precio, d24, d15, m3):
-        st.markdown(f"### {titulo}")
+    st.header("📈 Análisis Live")
+    
+    # Lista de Tickers corregida
+    tickers = {"₿ Bitcoin": "BTC-USD", "✨ Oro": "GC=F", "🇺🇸 S&P 500": "^GSPC"}
+    
+    for nombre, tick in tickers.items():
+        p, d24, d15, m3 = get_live_data(tick)
+        st.markdown(f"### {nombre}")
         col1, col2, col3 = st.columns(3)
-        col1.metric("Precio Actual", precio, d24)
-        def get_class(val): return "pos-box" if "+" in val else "neg-box"
-        col2.markdown(f'<div class="trend-box {get_class(d15)}"><div style="font-size:0.8rem;">15 DÍAS</div><div style="font-size:1.4rem; font-weight:800;">{d15}</div></div>', unsafe_allow_html=True)
-        col3.markdown(f'<div class="trend-box {get_class(m3)}"><div style="font-size:0.8rem;">3 MESES</div><div style="font-size:1.4rem; font-weight:800;">{m3}</div></div>', unsafe_allow_html=True)
+        col1.metric("Precio", p, d24)
+        def get_cl(v): return "pos-box" if "+" in v else "neg-box"
+        col2.markdown(f'<div class="trend-box {get_cl(d15)}"><div style="font-size:0.8rem;">15D</div><div style="font-size:1.2rem; font-weight:800;">{d15}</div></div>', unsafe_allow_html=True)
+        col3.markdown(f'<div class="trend-box {get_cl(m3)}"><div style="font-size:0.8rem;">3M</div><div style="font-size:1.2rem; font-weight:800;">{m3}</div></div>', unsafe_allow_html=True)
         st.divider()
-
-    card_financiera("₿ Bitcoin (USD)", f"${btc_p}", btc_24, btc_15, btc_3m)
-    card_financiera("✨ Oro (Onza)", f"{oro_p} €", oro_24, oro_15, oro_3m)
-    card_financiera("🇺🇸 S&P 500 (Bolsa)", f"{sp_p} pts", sp_24, sp_15, sp_3m)
-
-    st.subheader("🏦 Financiación y Ahorro")
-    c_a, c_b = st.columns(2)
-    with c_a:
-        st.dataframe(pd.DataFrame({"Préstamos": ["Hip. Fija", "P. Personal"], "TAE": ["2.20%", "6.50%"]}), use_container_width=True, hide_index=True)
-    with c_b:
-        st.dataframe(pd.DataFrame({"Ahorro": ["Raisin", "Letras Tesoro"], "Paga": ["2.85%", "3.15%"]}), use_container_width=True, hide_index=True)
