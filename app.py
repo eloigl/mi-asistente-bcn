@@ -4,9 +4,9 @@ import yfinance as yf
 from datetime import datetime
 
 # 1. Configuración de la App
-st.set_page_config(page_title="Radar BCN Premium", layout="wide")
+st.set_page_config(page_title="Radar BCN Premium v13", layout="wide")
 
-# ESTILO CSS (Tu diseño azul y limpio)
+# ESTILO CSS
 st.markdown("""
     <style>
     [data-testid="stMetricValue"] { font-size: 2.2rem !important; font-weight: 800 !important; color: #1e40af !important; }
@@ -20,23 +20,31 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# FUNCIÓN ÚNICA DE SINCRONIZACIÓN
-def get_live_data(ticker):
+# FUNCIÓN DE AUTOMATIZACIÓN COMPLETA
+def get_full_data(ticker):
     try:
         t = yf.Ticker(ticker)
         df = t.history(period="6mo")
-        if df.empty: return 0.0, "0%", 0.0
+        if df.empty or len(df) < 65:
+            return "---", "0%", "0%", "0%", 0.0
+        
         actual = float(df['Close'].iloc[-1])
         ayer = float(df['Close'].iloc[-2])
+        hace_15d = float(df['Close'].iloc[-11])
+        hace_3m = float(df['Close'].iloc[0])
+        
         v24h = ((actual - ayer) / ayer) * 100
-        return actual, f"{v24h:+.2f}%", actual
+        v15d = ((actual - hace_15d) / hace_15d) * 100
+        v3m = ((actual - hace_3m) / hace_3m) * 100
+        
+        return f"{actual:,.2f}", f"{v24h:+.2f}%", f"{v15d:+.2f}%", f"{v3m:+.2f}%", actual
     except:
-        return 0.0, "0%", 0.0
+        return "Error", "0%", "0%", "0%", 0.0
 
-st.title("🚀 Radar BCN Premium")
-st.write(f"Sincronización total: {datetime.now().strftime('%d/%m/%Y | %H:%Mh')}")
+st.title("🚀 Radar BCN Premium v13.0")
+st.write(f"Actualización integral: {datetime.now().strftime('%d/%m/%Y | %H:%Mh')}")
 
-tabs = st.tabs(["🏠 Inmuebles", "💼 Empleo", "📈 Finanzas & Bancos"])
+tabs = st.tabs(["🏠 Inmuebles", "💼 Empleo", "📈 Finanzas Full"])
 
 # --- TAB 1: INMUEBLES ---
 with tabs[0]:
@@ -70,43 +78,48 @@ with tabs[1]:
         for t, s in [("Videógrafo", "25k"), ("Post-Prod", "24k"), ("Técnico AV", "22k")]:
             st.markdown(f'<div class="job-card" style="border-left: 6px solid #2563eb;"><b>{t}</b><br>{s}</div>', unsafe_allow_html=True)
 
-# --- TAB 3: FINANZAS Y BANCOS (TODO AUTO) ---
+# --- TAB 3: FINANZAS COMPLETO ---
 with tabs[2]:
-    st.header("📈 Análisis de Mercado")
+    st.header("📈 Análisis de Mercado en Tiempo Real")
     
-    with st.spinner('Sincronizando con mercados...'):
-        btc_p, btc_v, _ = get_live_data("BTC-USD")
-        oro_p, oro_v, _ = get_live_data("GC=F")
-        # Referencia para bancos: Letras a 3 meses e índice interbancario
-        _, _, irx_val = get_live_data("^IRX")
+    def render_card(titulo, ticker, es_moneda=True):
+        p, d24, d15, m3, val_puro = get_full_data(ticker)
+        st.markdown(f"### {titulo}")
+        col1, col2, col3 = st.columns(3)
+        simbolo = "$" if es_moneda and "USD" in ticker else "€" if es_moneda else ""
+        col1.metric("Hoy", f"{p} {simbolo}", d24)
         
-    m1, m2 = st.columns(2)
-    m1.metric("₿ Bitcoin", f"${btc_p:,.2f}", btc_v)
-    m2.metric("✨ Oro", f"{oro_p:,.2f} €", oro_v)
-    
-    st.divider()
+        def get_cl(v): return "pos-box" if "+" in v else "neg-box"
+        col2.markdown(f'<div class="trend-box {get_cl(d15)}"><div style="font-size:0.8rem;">15 DÍAS</div><div style="font-size:1.3rem; font-weight:800;">{d15}</div></div>', unsafe_allow_html=True)
+        col3.markdown(f'<div class="trend-box {get_cl(m3)}"><div style="font-size:0.8rem;">3 MESES</div><div style="font-size:1.3rem; font-weight:800;">{m3}</div></div>', unsafe_allow_html=True)
+        st.divider()
+        return val_puro
+
+    # Ejecución de cartas
+    render_card("₿ Bitcoin", "BTC-USD")
+    render_card("✨ Oro", "GC=F")
+    render_card("🇺🇸 S&P 500", "^GSPC", es_moneda=False)
+    irx_val = render_card("📉 Euríbor / Tipos (Ref)", "^IRX", es_moneda=False)
+
+    # --- BANCOS (BASADO EN EL IRX) ---
     st.subheader("🏦 Financiación y Ahorro Sincronizado")
+    cb1, cb2 = st.columns(2)
     
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.write("**Coste Préstamos**")
-        # Euribor estimado basado en tipos actuales
-        euribor_hoy = 3.15 
+    with cb1:
+        st.write("**Préstamos**")
+        euribor_est = irx_val if irx_val > 0 else 3.15
         df_p = pd.DataFrame({
             "Tipo": ["Hipoteca Fija", "Hipoteca Variable", "P. Personal"],
-            "TAE": ["2.25%", f"Eur. + 0.45% ({euribor_hoy+0.45:.2f}%)", "6.75%"]
+            "TAE": ["2.25%", f"Eur + 0.45% ({euribor_est+0.45:.2f}%)", "6.75%"]
         })
         st.dataframe(df_p, use_container_width=True, hide_index=True)
-
-    with col_b:
-        st.write("**Rentabilidad Ahorro**")
-        # El interés de ahorro se mueve con el índice IRX
-        rent_letras = f"{irx_val - 0.25:.2f}%" if irx_val > 0 else "3.10%"
-        rent_cuenta = f"{irx_val - 1.20:.2f}%" if irx_val > 0 else "2.10%"
+        
+    with cb2:
+        st.write("**Ahorro**")
+        letras = f"{irx_val - 0.25:.2f}%" if irx_val > 0 else "3.10%"
+        cuenta = f"{irx_val - 1.25:.2f}%" if irx_val > 0 else "2.10%"
         df_a = pd.DataFrame({
-            "Producto": ["Letras Tesoro", "Cuenta Remunerada", "Raisin (Top)"],
-            "Paga": [rent_letras, rent_cuenta, "3.35%"]
+            "Producto": ["Letras Tesoro", "Cuenta Remunerada", "Raisin"],
+            "Paga": [letras, cuenta, "3.35%"]
         })
         st.dataframe(df_a, use_container_width=True, hide_index=True)
-
-    st.caption(f"Referencia técnica: Rendimiento deuda pública hoy en {irx_val:.2f}%")
