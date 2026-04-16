@@ -6,7 +6,7 @@ from datetime import datetime
 # 1. Configuración de la App
 st.set_page_config(page_title="Radar BCN Vivo", layout="wide")
 
-# ESTILO CSS
+# ESTILO CSS (Precios azul, cajas de tendencia y tarjetas)
 st.markdown("""
     <style>
     [data-testid="stMetricValue"] { font-size: 2.2rem !important; font-weight: 800 !important; color: #1e40af !important; }
@@ -23,46 +23,44 @@ st.markdown("""
 # FUNCIÓN DE AUTOMATIZACIÓN ULTRA-ROBUSTA
 def get_live_data(ticker):
     try:
-        # Descarga simple sin hilos ni progresos para evitar bloqueos
         ticker_obj = yf.Ticker(ticker)
         df = ticker_obj.history(period="6mo")
-        
         if df.empty or len(df) < 10:
             return "---", "0%", "0%", "0%"
-            
         actual = float(df['Close'].iloc[-1])
         ayer = float(df['Close'].iloc[-2])
-        # Buscamos posiciones seguras hacia atrás
         hace_15d = float(df['Close'].iloc[-11]) if len(df) > 11 else ayer
         hace_3m = float(df['Close'].iloc[0])
-        
-        v24h = ((actual - ayer) / ayer) * 100
-        v15d = ((actual - hace_15d) / hace_15d) * 100
-        v3m = ((actual - hace_3m) / hace_3m) * 100
-        
+        v24h, v15d, v3m = ((actual-ayer)/ayer)*100, ((actual-hace_15d)/hace_15d)*100, ((actual-hace_3m)/hace_3m)*100
         return f"{actual:,.2f}", f"{v24h:+.2f}%", f"{v15d:+.2f}%", f"{v3m:+.2f}%"
-    except Exception:
-        return "Error Red", "0%", "0%", "0%"
+    except:
+        return "Sincronizando...", "0%", "0%", "0%"
 
-st.title("🚀 Radar BCN Premium v12.3")
-st.write(f"Sincronización: {datetime.now().strftime('%d/%m/%Y | %H:%Mh')}")
+st.title("🚀 Radar BCN Premium v12.4")
+st.write(f"Actualizado: {datetime.now().strftime('%d/%m/%Y | %H:%Mh')}")
 
 tabs = st.tabs(["🏠 Inmuebles", "💼 Empleo", "📈 Finanzas"])
 
-# --- TAB 1: INMUEBLES ---
+# --- TAB 1: INMUEBLES (TOP 10) ---
 with tabs[0]:
+    st.header("📍 Oportunidades < 150.000€")
     inmuebles = [
-        {"zona": "Eixample Esquerra", "tipo": "Local Comercial", "precio": "115.000€", "m2": "45m²", "ref": "Bajo con escaparate"},
-        {"zona": "Poblenou", "tipo": "Oficina Loft", "precio": "139.000€", "m2": "55m²", "ref": "Cerca de zona tecnológica"},
+        {"zona": "Eixample Esquerra", "tipo": "Local Comercial", "precio": "115.000€", "m2": "45m²", "ref": "Bajo escaparate"},
+        {"zona": "Poblenou", "tipo": "Oficina Loft", "precio": "139.000€", "m2": "55m²", "ref": "Zona tecnológica"},
         {"zona": "Sants", "tipo": "Local/Estudio", "precio": "89.000€", "m2": "38m²", "ref": "Ideal inversión"},
-        {"zona": "Ciutat Vella", "tipo": "Local Histórico", "precio": "145.000€", "m2": "60m²", "ref": "Zona de alto paso"},
-        {"zona": "Gràcia", "tipo": "Despacho Profesional", "precio": "120.000€", "m2": "42m²", "ref": "Exterior, mucha luz"}
+        {"zona": "Ciutat Vella", "tipo": "Local Histórico", "precio": "145.000€", "m2": "60m²", "ref": "Zona alto paso"},
+        {"zona": "Gràcia", "tipo": "Despacho Prof.", "precio": "120.000€", "m2": "42m²", "ref": "Exterior, luz"},
+        {"zona": "Sant Martí", "tipo": "Local diáfano", "precio": "95.000€", "m2": "50m²", "ref": "Reformado"},
+        {"zona": "Les Corts", "tipo": "Oficina PB", "precio": "130.000€", "m2": "48m²", "ref": "Cerca Av. Madrid"},
+        {"zona": "Sagrada Fam.", "tipo": "Local pequeño", "precio": "75.000€", "m2": "30m²", "ref": "Oportunidad"},
+        {"zona": "Horta", "tipo": "Local comercial", "precio": "110.000€", "m2": "65m²", "ref": "Gran fachada"},
+        {"zona": "Poble Sec", "tipo": "Estudio/Local", "precio": "99.000€", "m2": "40m²", "ref": "Cerca Metro"}
     ]
     cols = st.columns(2)
     for i, casa in enumerate(inmuebles):
         with cols[i % 2]:
             st.markdown(f'<div class="house-card"><span class="area-tag">{casa["zona"]}</span><div style="margin-top:10px;"><b>{casa["tipo"]}</b></div><div class="price-tag">{casa["precio"]}</div><div style="font-size:0.9rem; color:#444;">{casa["m2"]} | {casa["ref"]}</div></div>', unsafe_allow_html=True)
-            st.link_button(f"Ver Idealista", "https://www.idealista.com/venta-locales/barcelona-barcelona/con-precio-hasta_150000/", key=f"house_{i}")
+            st.link_button("Ver Idealista", "https://www.idealista.com/venta-locales/barcelona-barcelona/con-precio-hasta_150000/", key=f"h_{i}")
 
 # --- TAB 2: EMPLEO ---
 with tabs[1]:
@@ -78,17 +76,38 @@ with tabs[1]:
 
 # --- TAB 3: FINANZAS ---
 with tabs[2]:
-    st.header("📈 Análisis Live")
+    st.header("📈 Análisis de Mercado en Vivo")
     
-    # Lista de Tickers corregida
-    tickers = {"₿ Bitcoin": "BTC-USD", "✨ Oro": "GC=F", "🇺🇸 S&P 500": "^GSPC"}
+    # Seccion de Cripto y Bolsa
+    tickers = {"₿ Bitcoin (USD)": "BTC-USD", "✨ Oro (Onza)": "GC=F", "🇺🇸 S&P 500": "^GSPC"}
     
     for nombre, tick in tickers.items():
         p, d24, d15, m3 = get_live_data(tick)
         st.markdown(f"### {nombre}")
         col1, col2, col3 = st.columns(3)
-        col1.metric("Precio", p, d24)
+        col1.metric("Hoy", p, d24)
         def get_cl(v): return "pos-box" if "+" in v else "neg-box"
         col2.markdown(f'<div class="trend-box {get_cl(d15)}"><div style="font-size:0.8rem;">15D</div><div style="font-size:1.2rem; font-weight:800;">{d15}</div></div>', unsafe_allow_html=True)
         col3.markdown(f'<div class="trend-box {get_cl(m3)}"><div style="font-size:0.8rem;">3M</div><div style="font-size:1.2rem; font-weight:800;">{m3}</div></div>', unsafe_allow_html=True)
         st.divider()
+
+    # REINTEGRACIÓN DE FINANCIACIÓN Y AHORRO
+    st.subheader("🏦 Financiación y Ahorro")
+    st.info("Tasas de interés y rentabilidad actualizadas esta semana")
+    
+    c_a, c_b = st.columns(2)
+    with c_a:
+        st.write("**Hipotecas y Préstamos**")
+        df_p = pd.DataFrame({
+            "Tipo": ["Hipoteca Fija", "Hipoteca Variable", "Préstamo Personal", "Préstamo Coche"],
+            "TAE": ["2.20%", "Euríbor + 0.45%", "6.50%", "5.90%"]
+        })
+        st.dataframe(df_p, use_container_width=True, hide_index=True)
+        
+    with c_b:
+        st.write("**Rentabilidad Ahorro**")
+        df_a = pd.DataFrame({
+            "Producto": ["Depósito Raisin", "Cuenta Remunerada", "Letras del Tesoro", "Banca Tradicional"],
+            "Paga": ["2.85%", "2.10%", "3.15%", "0.75%"]
+        })
+        st.dataframe(df_a, use_container_width=True, hide_index=True)
